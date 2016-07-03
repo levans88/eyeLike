@@ -9,6 +9,7 @@
 #include <stdio.h>
 
 #include "constants.h"
+#include "globals.h"
 #include "helpers.h"
 
 // Pre-declarations

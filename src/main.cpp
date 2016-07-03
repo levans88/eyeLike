@@ -28,6 +28,34 @@ cv::RNG rng(12345);
 cv::Mat debugImage;
 cv::Mat skinCrCbHist = cv::Mat::zeros(cv::Size(256, 256), CV_8UC1);
 
+//-- Note, these used to be constants but are now global variables so they can be modified after runtime
+// Debugging
+bool kPlotVectorField = false;
+
+// Size constants
+int kEyePercentTop = 25;
+int kEyePercentSide = 13;
+int kEyePercentHeight = 30;
+int kEyePercentWidth = 35;
+
+// Preprocessing
+bool kSmoothFaceImage = false;
+float kSmoothFaceFactor = 0.005;
+
+// Algorithm Parameters
+int kFastEyeWidth = 50;
+int kWeightBlurSize = 5;
+bool kEnableWeight = true;
+float kWeightDivisor = 1.0;
+double kGradientThreshold = 50.0;
+
+// Postprocessing
+bool kEnablePostProcess = true;
+float kPostProcessThreshold = 0.97;
+
+// Eye Corner
+bool kEnableEyeCorner = false;
+
 /**
  * @function main
  */
