@@ -30,31 +30,31 @@ cv::Mat skinCrCbHist = cv::Mat::zeros(cv::Size(256, 256), CV_8UC1);
 
 //-- Note, these used to be constants but are now global variables so they can be modified after runtime
 // Debugging
-bool kPlotVectorField = false;
+bool g_plotVectorField = false;
 
 // Size constants
-int kEyePercentTop = 25;
-int kEyePercentSide = 13;
-int kEyePercentHeight = 30;
-int kEyePercentWidth = 35;
+int g_eyePercentTop = 25;
+int g_eyePercentSide = 13;
+int g_eyePercentHeight = 30;
+int g_eyePercentWidth = 35;
 
 // Preprocessing
-bool kSmoothFaceImage = false;
-float kSmoothFaceFactor = 0.005;
+bool g_smoothFaceImage = false;
+float g_smoothFaceFactor = 0.005;
 
 // Algorithm Parameters
-int kFastEyeWidth = 50;
-int kWeightBlurSize = 5;
-bool kEnableWeight = true;
-float kWeightDivisor = 1.0;
-double kGradientThreshold = 50.0;
+int g_fastEyeWidth = 50;
+int g_weightBlurSize = 5;
+bool g_enableWeight = true;
+float g_weightDivisor = 1.0;
+double g_gradientThreshold = 50.0;
 
 // Postprocessing
-bool kEnablePostProcess = true;
-float kPostProcessThreshold = 0.97;
+bool g_enablePostProcess = true;
+float g_postProcessThreshold = 0.97;
 
 // Eye Corner
-bool kEnableEyeCorner = false;
+bool g_enableEyeCorner = false;
 
 /**
  * @function main
@@ -77,6 +77,10 @@ int main( int argc, const char** argv ) {
   cv::moveWindow("aa", 10, 800);
   cv::namedWindow("aaa",CV_WINDOW_NORMAL);
   cv::moveWindow("aaa", 10, 800);
+
+  cv::namedWindow("Menu",CV_WINDOW_AUTOSIZE);
+  cv::moveWindow("Menu", 0, 0);
+  //cv::createTrackbar();
 
   createCornerKernels();
   ellipse(skinCrCbHist, cv::Point(113, 155.6), cv::Size(23.4, 15.2),
@@ -127,17 +131,17 @@ void findEyes(cv::Mat frame_gray, cv::Rect face) {
   cv::Mat faceROI = frame_gray(face);
   cv::Mat debugFace = faceROI;
 
-  if (kSmoothFaceImage) {
-    double sigma = kSmoothFaceFactor * face.width;
+  if (g_smoothFaceImage) {
+    double sigma = g_smoothFaceFactor * face.width;
     GaussianBlur( faceROI, faceROI, cv::Size( 0, 0 ), sigma);
   }
   //-- Find eye regions and draw them
-  int eye_region_width = face.width * (kEyePercentWidth/100.0);
-  int eye_region_height = face.width * (kEyePercentHeight/100.0);
-  int eye_region_top = face.height * (kEyePercentTop/100.0);
-  cv::Rect leftEyeRegion(face.width*(kEyePercentSide/100.0),
+  int eye_region_width = face.width * (g_eyePercentWidth/100.0);
+  int eye_region_height = face.width * (g_eyePercentHeight/100.0);
+  int eye_region_top = face.height * (g_eyePercentTop/100.0);
+  cv::Rect leftEyeRegion(face.width*(g_eyePercentSide/100.0),
                          eye_region_top,eye_region_width,eye_region_height);
-  cv::Rect rightEyeRegion(face.width - eye_region_width - face.width*(kEyePercentSide/100.0),
+  cv::Rect rightEyeRegion(face.width - eye_region_width - face.width*(g_eyePercentSide/100.0),
                           eye_region_top,eye_region_width,eye_region_height);
 
   //-- Find Eye Centers
@@ -176,7 +180,7 @@ void findEyes(cv::Mat frame_gray, cv::Rect face) {
   circle(debugFace, leftPupil, 3, 1234);
 
   //-- Find Eye Corners
-  if (kEnableEyeCorner) {
+  if (g_enableEyeCorner) {
     cv::Point2f leftRightCorner = findEyeCorner(faceROI(leftRightCornerRegion), true, false);
     leftRightCorner.x += leftRightCornerRegion.x;
     leftRightCorner.y += leftRightCornerRegion.y;

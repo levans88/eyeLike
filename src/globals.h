@@ -2,30 +2,30 @@
 #define GLOBALS_H
 
 // Debugging
-extern bool kPlotVectorField;
+extern bool g_plotVectorField;
 
 // Size constants
-extern int kEyePercentTop;
-extern int kEyePercentSide;
-extern int kEyePercentHeight;
-extern int kEyePercentWidth;
+extern int g_eyePercentTop;
+extern int g_eyePercentSide;
+extern int g_eyePercentHeight;
+extern int g_eyePercentWidth;
 
 // Preprocessing
-extern bool kSmoothFaceImage;
-extern float kSmoothFaceFactor;
+extern bool g_smoothFaceImage;
+extern float g_smoothFaceFactor;
 
 // Algorithm Parameters
-extern int kFastEyeWidth;
-extern int kWeightBlurSize;
-extern bool kEnableWeight;
-extern float kWeightDivisor;
-extern double kGradientThreshold;
+extern int g_fastEyeWidth;
+extern int g_weightBlurSize;
+extern bool g_enableWeight;
+extern float g_weightDivisor;
+extern double g_gradientThreshold;
 
 // Postprocessing
-extern bool kEnablePostProcess;
-extern float kPostProcessThreshold;
+extern bool g_enablePostProcess;
+extern float g_postProcessThreshold;
 
 // Eye Corner
-extern bool kEnableEyeCorner;
+extern bool g_enableEyeCorner;
 
 #endif
