@@ -9,6 +9,7 @@
 - Some methods were modified to prevent "0" and use at least "1" as a minimum value instead.
 - Blur only works with odd numbers so currently I'm just doing +1 if even.
 - Comments are not cleaned up yet.
+- See "CMakeInstructions.md" for loose instructions on how to generate a Visual Studio project from the original.
 
 ##eyeLike
 An OpenCV based webcam eye tracker based on a simple image gradient-based eye center algorithm by Fabian Timm.
