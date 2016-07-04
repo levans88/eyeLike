@@ -16,6 +16,7 @@ Copy include folder from:
 	H:\OpenCV\build\include
 
 To:
+	
 	H:\OpenCV\build\x64\vc14\lib\include
 
 Run cmake-gui
