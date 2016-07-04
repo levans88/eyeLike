@@ -17,16 +17,49 @@
 
 /** Function Headers */
 void detectAndDisplay( cv::Mat frame );
+//void callbackButton(int state, void* userdata);
 
 /** Global variables */
 //-- Note, either copy these two files from opencv/data/haarscascades to your current folder, or change these locations
-cv::String face_cascade_name = "../../../res/haarcascade_frontalface_alt.xml";
+cv::String face_cascade_name = "../res/haarcascade_frontalface_alt.xml";
 cv::CascadeClassifier face_cascade;
 std::string main_window_name = "Capture - Face detection";
 std::string face_window_name = "Capture - Face";
 cv::RNG rng(12345);
 cv::Mat debugImage;
 cv::Mat skinCrCbHist = cv::Mat::zeros(cv::Size(256, 256), CV_8UC1);
+
+//-- Note, these used to be constants but are now global variables so they can be modified after runtime
+// Debugging
+bool g_plotVectorField = false;
+
+// Size constants
+int g_eyePercentTop = 25;
+int g_eyePercentSide = 13;
+int g_eyePercentHeight = 30;
+int g_eyePercentWidth = 35;
+
+// Preprocessing
+bool g_smoothFaceImage = true;
+int g_smoothFaceFactorInt = 5;
+//float g_smoothFaceFactor = 0.005;
+
+// Algorithm Parameters
+int g_fastEyeWidth = 50; //Trade accuracy for speed, smaller = faster, eye frame is rescaled to this width.
+int g_weightBlurSize = 5; //No observable difference
+bool g_enableWeight = true;
+int g_weightDivisorInt = 10; //Unsure of meaningful values or scale
+//float g_weightDivisor = 1.0;
+int g_gradientThresholdInt = 500;
+//double g_gradientThreshold = 50.0;
+
+// Postprocessing
+bool g_enablePostProcess = true;
+int g_postProcessThresholdInt = 97;
+//float g_postProcessThreshold = 0.97;
+
+// Eye Corner
+bool g_enableEyeCorner = false;
 
 /**
  * @function main
@@ -35,20 +68,42 @@ int main( int argc, const char** argv ) {
   cv::Mat frame;
 
   // Load the cascades
-  if( !face_cascade.load( face_cascade_name ) ){ printf("--(!)Error loading face cascade, please change face_cascade_name in source code.\n"); return -1; };
+  if( !face_cascade.load( face_cascade_name ) ){ printf("--(!)Error loading face cascade, please change face_cascade_name in source code. Press enter to continue...\n"); getchar(); return -1; };
 
-  cv::namedWindow(main_window_name,CV_WINDOW_NORMAL);
+  cv::namedWindow(main_window_name, CV_WINDOW_NORMAL);
   cv::moveWindow(main_window_name, 400, 100);
-  cv::namedWindow(face_window_name,CV_WINDOW_NORMAL);
+  cv::namedWindow(face_window_name, CV_WINDOW_NORMAL);
   cv::moveWindow(face_window_name, 10, 100);
-  cv::namedWindow("Right Eye",CV_WINDOW_NORMAL);
+  cv::namedWindow("Right Eye", CV_WINDOW_NORMAL);
   cv::moveWindow("Right Eye", 10, 600);
-  cv::namedWindow("Left Eye",CV_WINDOW_NORMAL);
+  cv::namedWindow("Left Eye", CV_WINDOW_NORMAL);
   cv::moveWindow("Left Eye", 10, 800);
-  cv::namedWindow("aa",CV_WINDOW_NORMAL);
-  cv::moveWindow("aa", 10, 800);
-  cv::namedWindow("aaa",CV_WINDOW_NORMAL);
-  cv::moveWindow("aaa", 10, 800);
+  //cv::namedWindow("aa",CV_WINDOW_NORMAL);
+  //cv::moveWindow("aa", 10, 800);
+  //cv::namedWindow("aaa",CV_WINDOW_NORMAL);
+  //cv::moveWindow("aaa", 10, 800);
+
+  cv::namedWindow("Menu", CV_WINDOW_AUTOSIZE | CV_GUI_EXPANDED);
+  cv::moveWindow("Menu", 0, 0);
+
+  //g_plotVectorField
+  //cv::createButton("button1", callbackButton, &g_plotVectorField, CV_CHECKBOX, 0);
+  //get state from var
+  cv::createTrackbar("Eye % Top", "Menu", &g_eyePercentTop, 70);
+  cv::createTrackbar("Eye % Side", "Menu", &g_eyePercentSide, 65);
+  cv::createTrackbar("Eye % H", "Menu", &g_eyePercentHeight, 75);
+  cv::createTrackbar("Eye % W", "Menu", &g_eyePercentWidth, 87);
+  cv::createTrackbar("Smooth", "Menu", &g_smoothFaceFactorInt, 20);
+  cv::createTrackbar("Fast Eye W", "Menu", &g_fastEyeWidth, 70);
+  cv::createTrackbar("Wt. Blur", "Menu", &g_weightBlurSize, 30);
+  cv::createTrackbar("Wt. Div.", "Menu", &g_weightDivisorInt, 100);
+  cv::createTrackbar("Grd. TH", "Menu", &g_gradientThresholdInt, 1000);
+  cv::createTrackbar("PostProc TH", "Menu", &g_postProcessThresholdInt, 100);
+
+  //g_smoothFaceImage = false;
+  //g_enableWeight = true;
+  //g_enablePostProcess = true;
+  //g_enableEyeCorner = false;
 
   createCornerKernels();
   ellipse(skinCrCbHist, cv::Point(113, 155.6), cv::Size(23.4, 15.2),
@@ -95,21 +150,34 @@ int main( int argc, const char** argv ) {
   return 0;
 }
 
+//void callbackButton(int state, void* userdata) {
+//	//(state == 0) ? (state = 1) : (state = 0);
+//	//(state == 0) ? (userdata = false) : (userdata = true);
+//	//printf(&userdata);
+//	printf("test");
+//}
+
 void findEyes(cv::Mat frame_gray, cv::Rect face) {
   cv::Mat faceROI = frame_gray(face);
   cv::Mat debugFace = faceROI;
 
-  if (kSmoothFaceImage) {
-    double sigma = kSmoothFaceFactor * face.width;
+  if (g_smoothFaceImage) {
+	//Disallow zero as value
+	if (g_smoothFaceFactorInt == 0) {
+		g_smoothFaceFactorInt = 1;
+	}
+	float smoothFaceFactor = (float)g_smoothFaceFactorInt / 1000;
+	//float smoothFaceFactor = g_smoothFaceFactorInt / 1000;
+    double sigma = smoothFaceFactor * face.width;
     GaussianBlur( faceROI, faceROI, cv::Size( 0, 0 ), sigma);
   }
   //-- Find eye regions and draw them
-  int eye_region_width = face.width * (kEyePercentWidth/100.0);
-  int eye_region_height = face.width * (kEyePercentHeight/100.0);
-  int eye_region_top = face.height * (kEyePercentTop/100.0);
-  cv::Rect leftEyeRegion(face.width*(kEyePercentSide/100.0),
+  int eye_region_width = face.width * (g_eyePercentWidth/100.0);
+  int eye_region_height = face.width * (g_eyePercentHeight/100.0);
+  int eye_region_top = face.height * (g_eyePercentTop/100.0);
+  cv::Rect leftEyeRegion(face.width*(g_eyePercentSide/100.0),
                          eye_region_top,eye_region_width,eye_region_height);
-  cv::Rect rightEyeRegion(face.width - eye_region_width - face.width*(kEyePercentSide/100.0),
+  cv::Rect rightEyeRegion(face.width - eye_region_width - face.width*(g_eyePercentSide/100.0),
                           eye_region_top,eye_region_width,eye_region_height);
 
   //-- Find Eye Centers
@@ -148,7 +216,7 @@ void findEyes(cv::Mat frame_gray, cv::Rect face) {
   circle(debugFace, leftPupil, 3, 1234);
 
   //-- Find Eye Corners
-  if (kEnableEyeCorner) {
+  if (g_enableEyeCorner) {
     cv::Point2f leftRightCorner = findEyeCorner(faceROI(leftRightCornerRegion), true, false);
     leftRightCorner.x += leftRightCornerRegion.x;
     leftRightCorner.y += leftRightCornerRegion.y;

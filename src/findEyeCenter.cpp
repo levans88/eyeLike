@@ -9,6 +9,7 @@
 #include <stdio.h>
 
 #include "constants.h"
+#include "globals.h"
 #include "helpers.h"
 
 // Pre-declarations
@@ -45,14 +46,17 @@ void plotVecField(const cv::Mat &gradientX, const cv::Mat &gradientY, const cv::
 #pragma mark Helpers
 
 cv::Point unscalePoint(cv::Point p, cv::Rect origSize) {
-  float ratio = (((float)kFastEyeWidth)/origSize.width);
+  float ratio = (((float)g_fastEyeWidth)/origSize.width);
   int x = round(p.x / ratio);
   int y = round(p.y / ratio);
   return cv::Point(x,y);
 }
 
 void scaleToFastSize(const cv::Mat &src,cv::Mat &dst) {
-  cv::resize(src, dst, cv::Size(kFastEyeWidth,(((float)kFastEyeWidth)/src.cols) * src.rows));
+  if (g_fastEyeWidth <= 5) {
+	  g_fastEyeWidth = 5;
+  }
+  cv::resize(src, dst, cv::Size(g_fastEyeWidth,(((float)g_fastEyeWidth)/src.cols) * src.rows));
 }
 
 cv::Mat computeMatXGradient(const cv::Mat &mat) {
@@ -93,8 +97,12 @@ void testPossibleCentersFormula(int x, int y, const cv::Mat &weight,double gx, d
       double dotProduct = dx*gx + dy*gy;
       dotProduct = std::max(0.0,dotProduct);
       // square and multiply by the weight
-      if (kEnableWeight) {
-        Or[cx] += dotProduct * dotProduct * (Wr[cx]/kWeightDivisor);
+      if (g_enableWeight) {
+		if (g_weightDivisorInt <= 10) {
+			g_weightDivisorInt = 10;
+		}
+		float weightDivisor = (float)g_weightDivisorInt / 10;
+        Or[cx] += dotProduct * dotProduct * (Wr[cx]/weightDivisor);
       } else {
         Or[cx] += dotProduct * dotProduct;
       }
@@ -115,8 +123,9 @@ cv::Point findEyeCenter(cv::Mat face, cv::Rect eye, std::string debugWindow) {
   // compute all the magnitudes
   cv::Mat mags = matrixMagnitude(gradientX, gradientY);
   //compute the threshold
-  double gradientThresh = computeDynamicThreshold(mags, kGradientThreshold);
-  //double gradientThresh = kGradientThreshold;
+  double gradientThreshold = (double)g_gradientThresholdInt / 10;
+  double gradientThresh = computeDynamicThreshold(mags, gradientThreshold);
+  //double gradientThresh = gradientThreshold;
   //double gradientThresh = 0;
   //normalize
   for (int y = 0; y < eyeROI.rows; ++y) {
@@ -137,7 +146,11 @@ cv::Point findEyeCenter(cv::Mat face, cv::Rect eye, std::string debugWindow) {
   imshow(debugWindow,gradientX);
   //-- Create a blurred and inverted image for weighting
   cv::Mat weight;
-  GaussianBlur( eyeROI, weight, cv::Size( kWeightBlurSize, kWeightBlurSize ), 0, 0 );
+  //Force g_weightBlurSize to odd number
+  if (g_weightBlurSize % 2 == 0) {
+	  g_weightBlurSize += 1;
+  }
+  GaussianBlur( eyeROI, weight, cv::Size( g_weightBlurSize, g_weightBlurSize ), 0, 0 );
   for (int y = 0; y < weight.rows; ++y) {
     unsigned char *row = weight.ptr<unsigned char>(y);
     for (int x = 0; x < weight.cols; ++x) {
@@ -172,12 +185,12 @@ cv::Point findEyeCenter(cv::Mat face, cv::Rect eye, std::string debugWindow) {
   double maxVal;
   cv::minMaxLoc(out, NULL,&maxVal,NULL,&maxP);
   //-- Flood fill the edges
-  if(kEnablePostProcess) {
+  if(g_enablePostProcess) {
     cv::Mat floodClone;
     //double floodThresh = computeDynamicThreshold(out, 1.5);
-    double floodThresh = maxVal * kPostProcessThreshold;
+    double floodThresh = maxVal * (float)g_postProcessThresholdInt / 100;
     cv::threshold(out, floodClone, floodThresh, 0.0f, cv::THRESH_TOZERO);
-    if(kPlotVectorField) {
+    if(g_plotVectorField) {
       //plotVecField(gradientX, gradientY, floodClone);
       imwrite("eyeFrame.png",eyeROIUnscaled);
     }
