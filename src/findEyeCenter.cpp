@@ -53,6 +53,9 @@ cv::Point unscalePoint(cv::Point p, cv::Rect origSize) {
 }
 
 void scaleToFastSize(const cv::Mat &src,cv::Mat &dst) {
+  if (g_fastEyeWidth <= 5) {
+	  g_fastEyeWidth = 5;
+  }
   cv::resize(src, dst, cv::Size(g_fastEyeWidth,(((float)g_fastEyeWidth)/src.cols) * src.rows));
 }
 
@@ -95,7 +98,11 @@ void testPossibleCentersFormula(int x, int y, const cv::Mat &weight,double gx, d
       dotProduct = std::max(0.0,dotProduct);
       // square and multiply by the weight
       if (g_enableWeight) {
-        Or[cx] += dotProduct * dotProduct * (Wr[cx]/g_weightDivisor);
+		if (g_weightDivisorInt <= 10) {
+			g_weightDivisorInt = 10;
+		}
+		float weightDivisor = (float)g_weightDivisorInt / 10;
+        Or[cx] += dotProduct * dotProduct * (Wr[cx]/weightDivisor);
       } else {
         Or[cx] += dotProduct * dotProduct;
       }
@@ -116,8 +123,9 @@ cv::Point findEyeCenter(cv::Mat face, cv::Rect eye, std::string debugWindow) {
   // compute all the magnitudes
   cv::Mat mags = matrixMagnitude(gradientX, gradientY);
   //compute the threshold
-  double gradientThresh = computeDynamicThreshold(mags, g_gradientThreshold);
-  //double gradientThresh = g_gradientThreshold;
+  double gradientThreshold = (double)g_gradientThresholdInt / 10;
+  double gradientThresh = computeDynamicThreshold(mags, gradientThreshold);
+  //double gradientThresh = gradientThreshold;
   //double gradientThresh = 0;
   //normalize
   for (int y = 0; y < eyeROI.rows; ++y) {
@@ -138,6 +146,10 @@ cv::Point findEyeCenter(cv::Mat face, cv::Rect eye, std::string debugWindow) {
   imshow(debugWindow,gradientX);
   //-- Create a blurred and inverted image for weighting
   cv::Mat weight;
+  //Force g_weightBlurSize to odd number
+  if (g_weightBlurSize % 2 == 0) {
+	  g_weightBlurSize += 1;
+  }
   GaussianBlur( eyeROI, weight, cv::Size( g_weightBlurSize, g_weightBlurSize ), 0, 0 );
   for (int y = 0; y < weight.rows; ++y) {
     unsigned char *row = weight.ptr<unsigned char>(y);
@@ -176,7 +188,7 @@ cv::Point findEyeCenter(cv::Mat face, cv::Rect eye, std::string debugWindow) {
   if(g_enablePostProcess) {
     cv::Mat floodClone;
     //double floodThresh = computeDynamicThreshold(out, 1.5);
-    double floodThresh = maxVal * g_postProcessThreshold;
+    double floodThresh = maxVal * (float)g_postProcessThresholdInt / 100;
     cv::threshold(out, floodClone, floodThresh, 0.0f, cv::THRESH_TOZERO);
     if(g_plotVectorField) {
       //plotVecField(gradientX, gradientY, floodClone);
