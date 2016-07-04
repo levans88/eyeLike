@@ -1,11 +1,11 @@
-##...Added Notes
+##Updates
 - This repo was forked from Tristan Hume's work as described in the original readme below.
 - I have converted constants to globals so the values can be adjusted at runtime.
 - Trackbars were added using OpenCV's included portions of qt.
 - I intended to add checkboxes to toggle some settings also but that requires full qt
   (which is out of scope for this weekend project...)
 - I tested min/max valid values for each variable independently but it is *possible* to crash on certain combos
-- The trackbars don't display values on the correct scale for floats but they are divided in the methods
+- The trackbars don't display values on the correct scale for floats but they are divided in the methods.
 - Some methods were modified to prevent "0" and use at least "1" as a minimum value instead.
 - Blur only works with odd numbers so currently I'm just doing +1 if even.
 - Comments are not cleaned up yet.
