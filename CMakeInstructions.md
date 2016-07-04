@@ -1,6 +1,8 @@
 CMake Instructions
 ------------------
 
+NOTE: Adapt these settings/paths as needed for your system.
+
 After OpenCV extract, add enviornment variable:
 	
 	setx -m OPENCV_DIR H:\OpenCV\Build\x64\vc14
@@ -12,7 +14,8 @@ Add to system path:
 Copy include folder from:
 	
 	H:\OpenCV\build\include
-to:
+
+To:
 	H:\OpenCV\build\x64\vc14\lib\include
 
 Run cmake-gui
